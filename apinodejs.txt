@@ -1,0 +1,564 @@
+"use strict";
+require("dotenv").config();
+// const Knex = require('knex');
+const express = require("express");
+const cors = require("cors");
+const bodyParser = require("body-parser");
+const HttpStatus = require("http-status-codes");
+const moment = require("moment");
+const fs = require("fs");
+const jwt = require('jsonwebtoken');
+var mysql = require('mysql');
+// @ts-ignore
+const model = require("./model/model");
+const modelAuth = require("./model/auth");
+const app = express();
+app.use(bodyParser.json({ limit: "5mb" }));
+app.use(bodyParser.urlencoded({ extended: true }));
+app.use(cors());
+
+var dbHIS = require("knex")({
+    client: "mysql",
+    connection: {
+        host: process.env.DB_HIS_HOST,
+        user: process.env.DB_HIS_USER,
+        port: +process.env.DB_HIS_PORT,
+        database: process.env.DB_HIS_NAME,
+        insecureAuth: true
+    },
+    pool: {
+        min: 0,
+        max: 100,
+        afterCreate: (conn, done) => {
+            conn.query("SET NAMES utf8", err => {
+                done(err, conn);
+            });
+        }
+    }
+});
+
+var db = mysql.createConnection({
+	host     : 'localhost',
+	user     : 'root',
+	password : '',
+	database : 'apiapp'
+});
+var dbC = mysql.createConnection({
+	host     : 'localhost',
+	user     : 'root',
+	password : '',
+	database : 'degrees_room'
+});
+
+
+
+// @ts-ignore
+app.get("/", (req, res) =>
+    res.send({
+        ok: true,
+        message: "Welcome to my api server!",
+        code: HttpStatus.OK
+    })
+);
+app.get('/apistaff', (req, res) => {
+    db.query("SELECT * FROM `staff`", (err, result) => {
+      if (err) {
+        console.log(err);
+      } else {
+        res.send(result);
+  
+      }
+    });
+  
+  });
+  app.get('/apistaff/:id', (request, res) => {
+    const id = request.params.id;
+    db.query("SELECT * FROM `staff` WHERE id_staff = ?",id, (err, result) => {
+      if (err) {
+        console.log(err);
+      } else {
+        res.send(result);
+  
+      }
+    });
+  
+  });
+  
+  app.get('/position_room/:id', (request, res) => {
+    const id = request.params.id;
+    db.query(`SELECT * from room WHERE id_position = ?`,id ,(err, result) => {
+
+      if (err) {
+        console.log(err);
+      } else {
+        res.send(result);
+  
+      }
+    });
+  
+  });
+
+
+  app.get('/apistaff_room', (request, res) => {
+    // var staff_room = request.body.staff_room;
+    db.query(`SELECT * from room   ` ,(err, result) => {
+
+      if (err) {
+        console.log(err);
+      } else {
+        res.send(result);
+  
+      }
+    });
+  
+  });
+
+  app.get('/apiroom_id/:id', (request, res) => {
+    const id = request.params.id;
+    db.query(`SELECT * from room WHERE room_id = ?`,id ,(err, result) => {
+
+      if (err) {
+        console.log(err);
+      } else {
+        res.send(result);
+  
+      }
+    });
+  
+  });
+
+  
+
+
+  app.get('/getdegrees_roomit', (request, res) => {
+    // var staff_room = request.body.staff_room;
+    dbC.query(`SELECT degrees ,datetime from roomit   ` ,(err, result) => {
+
+      if (err) {
+        console.log(err);
+      } else {
+        res.send(result);
+  
+      }
+    });
+  
+  });
+
+
+
+
+
+
+
+app.post("/login", async (request, response) => {
+    var username = request.body.username;
+    var password = request.body.password;
+
+
+    try {
+        // console.log(data);
+        let rs = await modelAuth.login(dbHIS, username, password);
+        
+        // console.log(rs[0]);
+        const token = jwt.sign({ username: username, username: username },
+            process.env.JWT_KEY, {
+            expiresIn: "1d",
+        }
+        );
+        if (rs[0].length == 1) {
+            console.log(rs[0], token);
+            // response.send({
+            //     ok: true,
+            //     access_lavel: rs[0],
+            //     token: token,
+            //     message: "User",
+                
+            // });
+            response.send(rs[0]);
+        }   
+         else  {
+            response.send({access_lavel: 'No'});
+        }
+
+    } catch (error) {
+        response.send({ ok: false, rows: error });
+
+    }
+})
+
+
+
+
+app.post("/login2", async (request, response) => {
+    var username = request.body.username;
+    var password = request.body.password;
+
+
+    try {
+        // console.log(data);
+        let rs = await modelAuth.login2(dbHIS, username, password);
+        
+        // console.log(rs[0]);
+        const token = jwt.sign({ username: username, username: username },
+            process.env.JWT_KEY, {
+            expiresIn: "1d",
+        }
+        );
+        if (rs[0].length == 1) {
+            console.log(rs[0], token);
+            response.send({
+                ok: true,
+                access_lavel: rs[0],
+                token: token,
+                message: "User",
+                
+            });
+        }    else  {
+            response.send({access_lavel: 'No'});
+        }
+
+    } catch (error) {
+        response.send({ ok: false, rows: error });
+
+    }
+})
+
+
+
+
+app.post('/addroom', (request, response, next) => {
+    let room_name = request.body.room_name;
+    let image_room = request.body.image_room;
+    let id_position = request.body.id_position;
+    let errors = false;
+
+    if (room_name.length === 0 || id_position.length === 0) {
+        errors = true;
+        // set flash message
+        request.flash('error', 'Please enter name and author');
+        // render to add.ejs with flash message
+        res.render('books/add', {
+      
+            room_name: room_name,
+            id_position: id_position
+        })
+    }
+
+    // if no error
+    if (!errors) {
+        let form_data = {
+            room_name: room_name,
+            id_position: id_position
+        }
+
+        // insert query
+        db.query(`
+        INSERT INTO room (room_id, room_name, image_room, id_position) VALUES
+         (NULL, '${room_name}', '${image_room}', '${id_position}')
+        `, (err, result) => {
+            if (err) {
+                response.send({
+                    ok: true,
+                    message: 'No',
+                 
+                });
+
+           
+            } else {
+                response.send({
+                    ok: true,
+                    message: 'yes',
+                 
+                });
+            }
+        })
+    }
+})
+
+
+app.post('/adduser', (request, response, next) => {
+  
+    let first_name = request.body.first_name;
+    let last_name = request.body.last_name;
+    let username = request.body.username;
+    let password = request.body.password;
+    let image_staff = request.body.image_staff;
+    let id_position = request.body.id_position;
+    let by_admin_id = request.body.by_admin_id;
+    
+    let errors = false;
+
+    if (username.length === 0 || password.length === 0) {
+        errors = true;
+        // set flash message
+        request.flash('error', 'Please enter name and author');
+        // render to add.ejs with flash message
+        res.render('books/add', {
+      
+            room_name: room_name,
+            id_position: id_position
+        })
+    }
+
+    // if no error
+    if (!errors) {
+    
+
+        // insert query
+        db.query(
+        //     `INSERT INTO staff SET 
+        // id_staff = '${id_staff}',
+        // first_name = '${first_name}', 
+        // last_name = '${last_name}', 
+        // username = '${username}', 
+        // password = '${password}',
+        // image_staff = '${image_staff}',
+        // id_position = '${id_position}',
+        // by_admin_id = '${by_admin_id}'
+        // `
+        `INSERT INTO staff (id_staff, first_name, last_name, username, password, image_staff, id_position, by_admin_id)
+         VALUES (NULL,'${first_name}','${last_name}','${username}',MD5('${password}'), '${image_staff}', '${id_position}', '${by_admin_id}')`
+        
+        
+        , (err, result) => {
+            if (err) {
+                response.send({
+                    ok: true,
+                    message: 'No',
+                 
+                });
+
+           
+            } else {
+                response.send({
+                    ok: true,
+                    message: 'yes',
+                 
+                });
+            }
+        })
+    }
+})
+
+app.delete("/delete/:id", (req, res) => {
+    const id = req.params.id;
+    db.query("DELETE FROM staff WHERE id_staff = ?", id, (err, result) => {
+      if (err) {
+        console.log(err);
+      } else {
+        res.send(result);
+      }
+    });
+  });
+
+
+  app.put("/updeta_user/:id", (request, response, next) => {
+    const id = request.params.id;
+    let first_name = request.body.first_name;
+    let last_name = request.body.last_name;
+    let username = request.body.username;
+    let password = request.body.password;
+    let image_staff = request.body.image_staff;
+    let id_position = request.body.id_position;
+    let by_admin_id = request.body.by_admin_id;
+    
+    let errors = false;
+
+    if (username.length === 0 || password.length === 0) {
+        errors = true;
+        // set flash message
+        request.flash('error', 'Please enter name and author');
+        // render to add.ejs with flash message
+        res.render('books/add', {
+      
+            room_name: room_name,
+            id_position: id_position
+        })
+    }
+
+    // if no error
+    
+    if (!errors) {
+    
+
+        // insert query
+        db.query(`UPDATE staff SET 
+        first_name = '${first_name}', 
+        last_name = '${last_name}', 
+        username = '${username}', 
+        password = '${password}',
+        image_staff = '${image_staff}',
+        id_position = '${id_position}',
+        by_admin_id = '${by_admin_id}'
+        WHERE  id_staff = ?
+        `
+        ,id, (err, result) => {
+            if (err) {
+                response.send({
+                    ok: true,
+                    message: 'No',
+                 
+                });
+
+           
+            } else {
+                response.send({
+                    ok: true,
+                    message: 'yes',
+                 
+                });
+            }
+        })
+    }
+})
+
+//   app.put("/updeta_user/:id", (request, response, next) => {
+//     const id = request.params.id;
+//     let first_name = request.body.first_name;
+//     let last_name = request.body.last_name;
+//     let username = request.body.username;
+//     let password = request.body.password;
+//     let image_staff = request.body.image_staff;
+//     let id_position = request.body.id_position;
+//     let by_admin_id = request.body.by_admin_id;
+
+//     if (username.length === 0 || password.length === 0) {
+//         errors = true;
+//         // set flash message
+//         request.flash('error', 'Please enter name and author');
+//         // render to add.ejs with flash message
+//         res.render('books/add', {
+      
+//             room_name: room_name,
+//             id_position: id_position
+//         })
+//     }
+
+//     // if no error
+//     if (!errors) {
+    
+
+//         // insert query
+//         db.query(`UPDATE staff SET 
+//         first_name = '${first_name}', 
+//         last_name = '${last_name}', 
+//         username = '${username}', 
+//         password = '${password}',
+//         image_staff = '${image_staff}',
+//         id_position = '${id_position}',
+//         by_admin_id = '${by_admin_id}'
+//         WHERE  id_staff = ?
+//         `
+//         ,id, (err, result) => {
+//             if (err) {
+//                 response.send({
+//                     ok: true,
+//                     message: 'No',
+                 
+//                 });
+
+           
+//             } else {
+//                 response.send({
+//                     ok: true,
+//                     message: 'yes',
+                 
+//                 });
+//             }
+//         })
+//     }
+// })
+
+
+
+app.post('/add_admin', (request, response, next) => {
+    let username = request.body.username;
+    let image_staff = request.body.image_staff;
+    let password = request.body.password;
+    let errors = false;
+
+    if (username.length === 0 || password.length === 0) {
+        errors = true;
+        // set flash message
+        request.flash('error', 'Please enter name and author');
+        // render to add.ejs with flash message
+        res.render('books/add', {
+            username: username
+        })
+    }
+
+    // if no error
+    if (!errors) {
+        // insert query
+        db.query(`INSERT INTO staff_admin SET 
+        username = '${username}', 
+        image_staff = '${image_staff}',
+        password = '${password}'
+        `, 
+        (err, result) => {
+            if (err) {
+                response.send({
+                    ok: true,
+                    message: 'No',
+                 
+                });
+
+           
+            } else {
+                response.send({
+                    ok: true,
+                    message: 'yes',
+                 
+                });
+            }
+        })
+    }
+})
+
+
+
+
+// @ts-ignore
+app.use((req, res, next) => {
+    res.status(HttpStatus.NOT_FOUND).json({
+        error: {
+            ok: false,
+            code: HttpStatus.NOT_FOUND,
+            error: HttpStatus.getStatusText(HttpStatus.NOT_FOUND)
+        }
+    });
+});
+
+
+
+
+
+var port = +process.env.WWW_PORT || 3000;
+
+app.listen(port, () => console.log(`Api listening on port ${port}!`));
+// app.get('/test', async (req, res) => {
+//     try {
+
+
+//         let rs = await model.getdata
+//         let data = {
+//             name: 'Kill',
+//             sex: 'Male',
+//             access_lavel: 'admin', //'admin',{'edit','view'} 
+//         }
+
+//         const token = jwt.sign(data,
+//             process.env.JWT_KEY, {
+//             expiresIn: "1d",
+//         })
+
+//         res.send({
+//             ok: true,
+//             message: 'ok test',
+//             rows: data,
+//             token: token
+//         });
+//     } catch (error) {
+//         console.error(error);
+//     }
+// });

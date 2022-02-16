@@ -1,0 +1,28 @@
+
+
+module.exports = {
+
+    login(dbHIS, username, password) {
+        // const sql = `SELECT * from staff  WHERE username = '${username}' AND password = '${password}' `;
+        // const sql = `SELECT id_position from staff  WHERE username = '${username}'  AND password = ('${password}') `;
+        const sql = `SELECT id_staff,first_name,last_name,username,image_staff,id_position,by_admin_id from staff  WHERE username = '${username}'  AND password = ('${password}') `;
+        return dbHIS.raw(sql)
+    },
+
+    login2(dbHIS, username, password) {
+      // const sql = `SELECT * from staff  WHERE username = '${username}' AND password = '${password}' `;
+      const sql = `SELECT id_staffadmin from staff_admin WHERE username = '${username}'  AND password = ('${password}') `;
+      
+      return dbHIS.raw(sql)
+  },
+    create: function(dbHIS, data,room_name,staff_room, callback) {
+        dbHIS.query(
+          `INSERT INTO room SET 
+          room_name = '${data.room_name}', 
+          staff_room = '${data.staff_room}'`,
+          callback
+        )
+      },
+     
+
+};
