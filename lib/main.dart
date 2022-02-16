@@ -1,95 +1,111 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_mysql_crud/page1/PageRoom.dart';
+import 'package:flutter_mysql_crud/page1/login.dart';
+import 'package:flutter_mysql_crud/pageAdmin/Showuser.dart';
+import 'package:flutter_mysql_crud/screens/launcher.dart';
 import 'dart:async';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 
 import 'details.dart';
-import 'newdata.dart';
+import 'pageAdmin/newdata.dart';
 
-void main()=>runApp(MaterialApp(
-  title: "Api Test",
-  debugShowCheckedModeBanner: false,
-  theme: ThemeData(
-    primarySwatch: Colors.red,
-
-  ),
-  home: Home(),
-));
-
-class Home extends StatefulWidget {
-  @override
-  _HomeState createState() => _HomeState();
-}
-
-
-class _HomeState extends State<Home> {
-
-  Future<List> getData() async{
-    final responce = await http.get("http://192.168.0.103/php/myfolder/getdata.php");
-    return jsonDecode(responce.body);
-  }
-
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text("My App Bar"),
+void main() => runApp(MaterialApp(
+      title: "Api",
+      theme: ThemeData(
+        primarySwatch: Colors.orange,
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: ()=>Navigator.of(context).push(
-          MaterialPageRoute(
+      home: Launcher(),
+    ));
 
-            builder: (BuildContext contex)=> NewData(),
-            
-          ),
-        ),
-        child: Icon(Icons.add),
-      ),
-      body:FutureBuilder<List>(
-        future: getData(),
-        builder: (ctx,ss) {
-          if(ss.hasError){
-            print("error");
-          }
-          if(ss.hasData){
-            return Items(list:ss.data);
+// void main() {
+//   runApp(MyApp());
+// }
 
-          }
-          else{
-            return CircularProgressIndicator();
+// // ส่วนของ Stateless widget
+// class MyApp extends StatelessWidget {
+//   @override
+//   Widget build(BuildContext context) {
+//     return MaterialApp(
+//       title: "Api Test",
+//       debugShowCheckedModeBanner: false,
+//       theme: ThemeData(
+//         primarySwatch: Colors.red,
+//       ),
+//       routes: {
+//         '/': (context) => LoginPage(),
+//         // '/่home': (context) => Launcher(),
+//         '/AllowRoom': (context) => PageRoom(),
+//         // '/about': (context) => About(),
+//         // '/1': (context) => Mytest(),
+//         // '/': (context) => Homeget(),
+//       },
+//     );
+//   }
+// }
 
-          }
-        },
-      ),
-    );
-  }
-}
+// class Home extends StatefulWidget {
+//   @override
+//   _HomeState createState() => _HomeState();
+// }
 
-class Items extends StatelessWidget {
+// class _HomeState extends State<Home> {
+//   Future<List> getData() async {
+//     final responce = await http.get("http://192.168.1.10:3000/apistaff");
+//     print(responce);
+//     return jsonDecode(responce.body);
+//   }
 
-  List list;
+//   @override
+//   Widget build(BuildContext context) {
+//     return Scaffold(
+//       appBar: AppBar(
+//         title: Text("My App Bar"),
+//       ),
+//       floatingActionButton: FloatingActionButton(
+//         onPressed: () => Navigator.of(context).push(
+//           MaterialPageRoute(
+//             builder: (BuildContext contex) => NewData(),
+//           ),
+//         ),
+//         child: Icon(Icons.add),
+//       ),
+//       body: FutureBuilder<List>(
+//         future: getData(),
+//         builder: (ctx, ss) {
+//           if (ss.hasError) {
+//             print("error");
+//           }
+//           if (ss.hasData) {
+//             return Items(list: ss.data);
+//           } else {
+//             return CircularProgressIndicator();
+//           }
+//         },
+//       ),
+//     );
+//   }
+// }
 
-  Items({this.list});
+// class Items extends StatelessWidget {
+//   List list;
 
-  @override
-  Widget build(BuildContext context) {
-    return ListView.builder(
-       itemCount: list==null?0:list.length,
-      itemBuilder: (ctx,i){
-        return ListTile(
+//   Items({this.list});
 
-          leading: Icon(Icons.message),
-          title: Text(list[i]['name']),
-          subtitle: Text(list[i]['mobile']),
-          onTap: ()=>Navigator.of(context).push(MaterialPageRoute(builder: (BuildContext context)=>Details(list:list,index:i),
-
-          )),
-        );
-
-      }
-    );
-  }
-}
-
+//   @override
+//   Widget build(BuildContext context) {
+//     return ListView.builder(
+//         itemCount: list == null ? 0 : list.length,
+//         itemBuilder: (ctx, i) {
+//           return ListTile(
+//             leading: Icon(Icons.message),
+//             title: Text(list[i]['username']),
+//             // subtitle: Text(list[i]['mobile']),
+//             onTap: () => Navigator.of(context).push(MaterialPageRoute(
+//               builder: (BuildContext context) => Details(list: list, index: i),
+//             )),
+//           );
+//         });
+//   }
+// }
